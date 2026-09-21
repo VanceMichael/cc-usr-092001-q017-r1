@@ -1,34 +1,22 @@
-"""提供项目的基础健康检查服务。"""
+"""服务启动入口。
 
-import json
+启动时确保本地数据库结构就绪，默认监听 8080，健康检查为 /health，
+业务接口统一在 /v1/ 前缀下。
+"""
+
 import os
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from http.server import ThreadingHTTPServer
 
-
-def health_payload() -> dict[str, str]:
-    """返回可供运行环境探测的服务状态。"""
-    return {"status": "ok"}
-
-
-class Handler(BaseHTTPRequestHandler):
-    """处理基础 HTTP 请求。"""
-
-    def do_GET(self) -> None:
-        if self.path != "/health":
-            self.send_error(404)
-            return
-        body = json.dumps(health_payload()).encode("utf-8")
-        self.send_response(200)
-        self.send_header("Content-Type", "application/json; charset=utf-8")
-        self.send_header("Content-Length", str(len(body)))
-        self.end_headers()
-        self.wfile.write(body)
-
-    def log_message(self, format: str, *args: object) -> None:
-        return
+from .api import Handler
+from .db import connect, initialize
 
 
 def main() -> None:
+    conn = connect()
+    try:
+        initialize(conn)
+    finally:
+        conn.close()
     port = int(os.environ.get("PORT", "8080"))
     ThreadingHTTPServer(("0.0.0.0", port), Handler).serve_forever()
 
