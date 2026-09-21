@@ -10,3 +10,7 @@ coverage/
 __pycache__/
 *.py[cod]
 .DS_Store
+
+# 本地数据库文件不得提交
+data/
+*.sqlite3
